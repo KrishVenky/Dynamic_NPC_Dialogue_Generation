@@ -4,3 +4,4 @@ transformers
 chromadb
 numpy
 huggingface_hub
+python-dotenv

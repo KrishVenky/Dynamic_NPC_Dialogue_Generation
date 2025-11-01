@@ -6,10 +6,14 @@ import chromadb
 import numpy as np
 import os 
 from huggingface_hub import login
+from dotenv import load_dotenv
+
+load_dotenv()
+hf_token = os.getenv("HUGGINGFACE_TOKEN")
 
 # --- 0. Configuration & Hugging Face Token Setup ---
 # NOTE: Using os.getenv to securely access your HF_TOKEN environment variable.
-os.environ["HF_TOKEN"] = "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"
+os.environ["HF_TOKEN"] = hf_token
 try:
     # Attempt to log in using the environment variable token
     login(token=os.getenv("HF_TOKEN"), add_to_git_credential=False)
