@@ -1,0 +1,118 @@
+{
+    "character_prompts": [
+        {
+            "character": "Cloud",
+            "topics": [
+                {
+                    "name": "SOLDIER / Past",
+                    "prompts": [
+                        {
+                            "question": "Is it true you failed to make First Class in SOLDIER?",
+                            "trigger": "Triggers conflict/identity dialogue"
+                        },
+                        {
+                            "question": "Why did you leave Shinra after the Nibelheim incident?",
+                            "trigger": "Triggers memory/trauma dialogue"
+                        }
+                    ]
+                },
+                {
+                    "name": "Motivation",
+                    "prompts": [
+                        {
+                            "question": "Is your only motivation for fighting Shinra the money, or is it Tifa?",
+                            "trigger": "Forces a choice/priority response"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "character": "Tifa",
+            "topics": [
+                {
+                    "name": "Avalanche / Morality",
+                    "prompts": [
+                        {
+                            "question": "Barret says blowing up the Mako Reactors is necessary, but do you think it's murder?",
+                            "trigger": "Triggers moral dilemma dialogue"
+                        }
+                    ]
+                },
+                {
+                    "name": "Nibelheim",
+                    "prompts": [
+                        {
+                            "question": "What happened to my mother during the attack on Nibelheim?",
+                            "trigger": "Triggers Tifa's role as the memory keeper"
+                        }
+                    ]
+                },
+                {
+                    "name": "Cloud's State",
+                    "prompts": [
+                        {
+                            "question": "Do you ever worry about Cloud's memories and whether they are real?",
+                            "trigger": "Triggers anxiety/concern about the protagonist"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "character": "Barret",
+            "topics": [
+                {
+                    "name": "Shinra / The Planet",
+                    "prompts": [
+                        {
+                            "question": "Tell me exactly why Shinra's Mako energy is killing the Planet.",
+                            "trigger": "Triggers passionate, philosophical response"
+                        }
+                    ]
+                },
+                {
+                    "name": "Personal",
+                    "prompts": [
+                        {
+                            "question": "What did the Shinra do to Dyne and the people of Corel?",
+                            "trigger": "Triggers personal revenge/pain dialogue"
+                        }
+                    ]
+                },
+                {
+                    "name": "Marlene",
+                    "prompts": [
+                        {
+                            "question": "Do you think Marlene will ever forgive you for your part in the Reactor bombings?",
+                            "trigger": "Triggers guilt/fatherhood dialogue"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "character": "Aerith",
+            "topics": [
+                {
+                    "name": "Cetra / Ancients",
+                    "prompts": [
+                        {
+                            "question": "What is the Lifestream, and why are you the only one who can hear the Planet's cry?",
+                            "trigger": "Triggers spiritual/lore dialogue"
+                        }
+                    ]
+                },
+                {
+                    "name": "Reno / Turks",
+                    "prompts": [
+                        {
+                            "question": "Why are the Turks constantly chasing you, and what does President Shinra want with you?",
+                            "trigger": "Triggers immediate conflict/escape context"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
