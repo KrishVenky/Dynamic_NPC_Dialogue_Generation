@@ -1,0 +1,6 @@
+pandas
+sentence-transformers
+transformers
+chromadb
+numpy
+huggingface_hub
