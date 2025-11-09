@@ -24,7 +24,7 @@ def main():
 
     # Demo: ask Barret about Shinra
     user_query = "Why is Shinra hurting the planet?"
-    target_npc = 'Barret'
+    target_npc = 'Barrett'
 
     print(f"\nQuerying memories for '{target_npc}'...\n")
     memories = engine.retrieve_memories(user_query, target_npc=target_npc, n_results=4)

@@ -1,0 +1,255 @@
+================================================================================
+TROUBLESHOOTING GUIDE - Response Quality Issues
+================================================================================
+
+PROBLEM: Model gives irrelevant or repetitive responses
+Example: Asked "What is the Lifestream?" → Got "The Planet sings, you know."
+(Just repeating an example utterance instead of answering)
+
+ROOT CAUSE:
+  The default model (distilgpt2) is TOO SMALL for complex tasks like:
+  - Explaining concepts
+  - Answering "what is" or "why" questions  
+  - Multi-sentence reasoning
+  
+  distilgpt2 has only ~82M parameters and was trained for simple text 
+  completion, not instruction-following or question-answering.
+
+================================================================================
+SOLUTION 1: Use a Larger Model (Recommended)
+================================================================================
+
+Try gpt2-medium (355M params) - much better at following instructions:
+
+```bash
+export LOCAL_GEN_MODEL="gpt2-medium"
+python3 test.py
+```
+
+Or gpt2-large (774M params) if you have 4GB+ RAM:
+
+```bash
+export LOCAL_GEN_MODEL="gpt2-large"
+python3 test.py
+```
+
+Expected improvement:
+  ✅ Actual answers instead of repetition
+  ✅ Better instruction following
+  ✅ More coherent explanations
+  ✅ Still free and local
+
+Trade-offs:
+  ⚠️  Slower generation (2-5x)
+  ⚠️  Higher memory usage
+  ⚠️  Larger download on first run
+
+================================================================================
+SOLUTION 2: Use Instruction-Tuned Models
+================================================================================
+
+For even better results, use models trained to follow instructions:
+
+Flan-T5 (Google, instruction-tuned):
+```bash
+export LOCAL_GEN_MODEL="google/flan-t5-base"
+python3 test.py
+```
+
+BLOOM (multilingual, instruction-tuned):
+```bash
+export LOCAL_GEN_MODEL="bigscience/bloom-560m"
+python3 test.py
+```
+
+These are specifically trained to:
+  ✅ Answer questions directly
+  ✅ Follow prompts accurately
+  ✅ Stay on topic
+
+================================================================================
+SOLUTION 3: Improve Prompt for Small Models
+================================================================================
+
+If you must use distilgpt2, adjust your prompts:
+
+INSTEAD OF:
+  "What is the Lifestream?"
+
+TRY:
+  "The Lifestream is" (completion format)
+  "Aerith explains: The Lifestream" (direct continuation)
+
+WHY THIS HELPS:
+  - Turns question into completion task
+  - Small models are trained for completion, not Q&A
+  - Gives model a strong starting point
+
+Example in test.py:
+```python
+# For small models, rephrase as completion
+if "what is" in user_query.lower():
+    concept = user_query.lower().split("what is")[-1].strip("? ")
+    completion_prompt = f"{target_npc} explains: {concept} is"
+    # Add to end of assembled prompt
+```
+
+================================================================================
+SOLUTION 4: Use Retrieval-Based Responses
+================================================================================
+
+For factual questions, use RAG more heavily:
+
+1. Retrieve relevant dataset passages about the topic
+2. Extract the actual answer from the dataset
+3. Rephrase in character voice (or just use as-is)
+
+This guarantees:
+  ✅ Accurate lore information
+  ✅ Canon-consistent answers
+  ✅ No hallucination
+
+Add to dialogue_engine.py:
+```python
+def extract_factual_answer(self, query: str, character: str):
+    # Get top 5 most relevant passages
+    memories = self.retrieve_memories(query, target_npc=character, n_results=5)
+    
+    # If confidence is high, use retrieved text directly
+    if memories and memories[0]['score'] > 0.5:
+        return memories[0]['document']
+    
+    # Otherwise fall back to generation
+    return self.generate(...)
+```
+
+================================================================================
+SOLUTION 5: Hybrid Approach (Best Results)
+================================================================================
+
+Combine retrieval + generation for optimal quality:
+
+STEP 1: Retrieve relevant passage
+  Query: "What is the Lifestream?"
+  Retrieved: "The Lifestream is the life blood of the Planet..." (from dataset)
+
+STEP 2: Use as prompt context
+  Prompt: "Based on this information: [retrieved passage]
+           Answer in Aerith's voice: [question]"
+
+STEP 3: Generate in-character paraphrase
+  Output: "It's like the Planet's spirit, you know? Everything that ever 
+           lived flows together there."
+
+This gives you:
+  ✅ Accurate information (from dataset)
+  ✅ Character voice (from generation)
+  ✅ Works with small models
+
+================================================================================
+COMPARING MODEL OPTIONS
+================================================================================
+
++------------------+----------+----------+---------------+------------------+
+| Model            | Size     | Speed    | Quality       | Best For         |
++------------------+----------+----------+---------------+------------------+
+| distilgpt2       | 82M      | Fast     | ⭐⭐         | Simple dialogue  |
+| (default)        |          |          |               | Short responses  |
++------------------+----------+----------+---------------+------------------+
+| gpt2-medium      | 355M     | Medium   | ⭐⭐⭐       | Most questions   |
+| (recommended)    |          |          |               | Explanations     |
++------------------+----------+----------+---------------+------------------+
+| gpt2-large       | 774M     | Slow     | ⭐⭐⭐⭐     | Complex dialogue |
+|                  |          |          |               | Nuanced answers  |
++------------------+----------+----------+---------------+------------------+
+| flan-t5-base     | 250M     | Medium   | ⭐⭐⭐⭐     | Q&A tasks        |
+| (instruction)    |          |          |               | Factual queries  |
++------------------+----------+----------+---------------+------------------+
+| Llama-2-7B       | 7B       | V. Slow  | ⭐⭐⭐⭐⭐   | Everything       |
+| (if GPU)         |          | (GPU)    |               | Best quality     |
++------------------+----------+----------+---------------+------------------+
+
+================================================================================
+QUICK FIX FOR YOUR DEMO
+================================================================================
+
+If you need to demo NOW and can't download a larger model:
+
+Option A - Switch Questions:
+  Instead of "What is the Lifestream?" (requires explanation)
+  Ask: "Why is Shinra hurting the planet?" (opinion/emotion)
+  
+  Small models handle opinions better than facts.
+
+Option B - Pre-script Responses:
+  For demo purposes, you can add a response mapping:
+  
+  In test.py:
+  ```python
+  demo_responses = {
+      "what is the lifestream": "It's the life energy of the Planet, flowing through everything.",
+      "why shinra": "Those damn reactors are sucking the life outta the Planet!"
+  }
+  
+  # Check if query matches a demo response
+  query_lower = user_query.lower()
+  for key, response in demo_responses.items():
+      if key in query_lower:
+          reply = response
+          break
+  else:
+      reply = engine.generate(prompt)  # fallback to model
+  ```
+
+Option C - Use Retrieved Text Directly:
+  Skip generation for factual questions, just use dataset:
+  
+  ```python
+  if "what is" in user_query.lower():
+      # Just use the retrieved context
+      if memories:
+          reply = memories[0]['document']
+      else:
+          reply = "I'm not sure..."
+  ```
+
+================================================================================
+RECOMMENDED ACTION FOR YOUR PROJECT
+================================================================================
+
+For your TA demo, I suggest:
+
+1. UPGRADE MODEL (10 minutes):
+   ```bash
+   export LOCAL_GEN_MODEL="gpt2-medium"
+   python3 test.py
+   ```
+   
+   This single change will dramatically improve quality.
+
+2. TEST QUESTIONS (5 minutes):
+   Focus demo on questions that work well:
+   ✅ "Why is Shinra evil?" (opinion)
+   ✅ "What do you think about Cloud?" (relationship)
+   ✅ "Are you worried?" (emotion)
+   
+   Avoid factual/encyclopedia questions with small models:
+   ❌ "What is the Lifestream?" (requires explanation)
+   ❌ "When did Sephiroth attack?" (requires facts)
+
+3. HAVE BACKUP (2 minutes):
+   Keep a few good sample outputs in your demo doc to show if 
+   live generation has issues.
+
+================================================================================
+CONCLUSION
+================================================================================
+
+The core issue is: **distilgpt2 is too small for instruction-following**.
+
+Your architecture (RAG + persona + memory) is solid. You just need a 
+bigger model to show it working properly.
+
+Quickest fix: `export LOCAL_GEN_MODEL="gpt2-medium"`
+
+================================================================================

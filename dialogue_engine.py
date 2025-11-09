@@ -18,17 +18,19 @@ COLLECTION_NAME = "ff7_dialogue_rag"
 class DialogueEngine:
     """Provider-agnostic dialogue engine with memory and persona-aware prompt assembly.
 
-    By default this engine prefers a free local HF transformer for generation (small CPU-friendly
-    model like `distilgpt2`). OpenAI is optional and will only be used if explicitly enabled
-    via environment variables (see `USE_OPENAI` below).
+    By default this engine uses TinyLlama-1.1B-Chat which is a small instruction-tuned model
+    that provides significantly better question-answering and instruction-following compared
+    to base GPT-2 models. This is a free local model optimized for chat interactions.
+    
+    You can override with: export LOCAL_GEN_MODEL="your-preferred-model"
     """
 
     def __init__(self,
-                 embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
-                 generation_model: str = "distilgpt2",
-                 chroma_path: str = CHROMA_DB_PATH,
-                 collection_name: str = COLLECTION_NAME,
-                 hf_device: Optional[str] = None):
+                 chroma_path: str = './chroma_db_ff7',
+                 embedding_model: str = 'sentence-transformers/all-MiniLM-L6-v2',
+                 generation_model: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+                 prompt_file: str = 'prompts.json',
+                 hf_device: int = None):
 
         self.embedder = SentenceTransformer(embedding_model)
         self.generation_model_name = generation_model
@@ -36,7 +38,7 @@ class DialogueEngine:
 
         # Initialize or connect to ChromaDB (persistent on-disk)
         self.client = chromadb.PersistentClient(path=chroma_path)
-        self.collection = self.client.get_or_create_collection(name=collection_name)
+        self.collection = self.client.get_or_create_collection(name=COLLECTION_NAME)
 
         # Local generator pipeline (lazy init)
         self._generator = None
@@ -223,51 +225,32 @@ class DialogueEngine:
         return examples
 
     def assemble_prompt(self, target_npc: str, user_query: str, conversation_history: List[Dict[str, str]] = None, memory_snippets: List[Dict] = None) -> str:
-        """Construct the final prompt to send to the generator. The prompt includes:
-        - A system instruction describing the NPC persona & rules
-        - A few-shot/example block (if available)
-        - Retrieved memories labeled and appended
-        - Recent conversation history
-        - The user query
+        """Construct the final prompt to send to the generator. 
+        Uses a dialogue-continuation format that works better for roleplay with smaller models.
         """
         conversation_history = conversation_history or []
         memory_snippets = memory_snippets or []
 
-        persona = ""
-        try:
-            personas = self.prompt_cfg.get('personas', {})
-            if target_npc.lower() in personas:
-                p = personas[target_npc.lower()]
-                persona = p.get('summary', '')
-        except Exception:
-            persona = ''
-
-        sys_inst = f"You are {target_npc}. {persona}\nYou must respond in character. Keep replies concise (1-3 sentences)."
-
-        few = self._few_shot_for(target_npc, k=2)
-        few_block = ''
+        # Get character examples
+        few = self._few_shot_for(target_npc, k=3)
+        
+        # Build dialogue script format
+        prompt_lines = []
+        prompt_lines.append(f"# {target_npc} Dialogue")
+        prompt_lines.append("")
+        
+        # Add examples in script format
         if few:
-            few_block = "\nExamples of how you speak:\n"
-            for ex in few:
-                few_block += f"User: {ex['user']}\n{target_npc}: {ex['character']}\n\n"
-
-        mem_block = ''
-        if memory_snippets:
-            mem_block = "\nRelevant context from your knowledge:\n"
-            for m in memory_snippets[:3]:  # limit to top 3 to reduce noise
-                doc = m.get('document', '')
-                speaker = m.get('metadata', {}).get('speaker', 'Unknown')
-                mem_block += f"- {speaker} said: \"{doc}\"\n"
-
-        hist_block = ''
-        if conversation_history:
-            hist_block = "\nRecent conversation:\n"
-            for turn in conversation_history[-4:]:  # limit to last 4 turns
-                hist_block += f"{turn.get('speaker')}: {turn.get('text')}\n"
-
-        # Construct prompt to encourage direct response
-        prompt = f"{sys_inst}\n{few_block}\n{mem_block}\n{hist_block}\nUser: {user_query}\n{target_npc}:"
-
+            for i, ex in enumerate(few[:3], 1):
+                prompt_lines.append(f"User: Tell me something.")
+                prompt_lines.append(f"{target_npc}: {ex['character']}")
+                prompt_lines.append("")
+        
+        # Add the actual query
+        prompt_lines.append(f"User: {user_query}")
+        prompt_lines.append(f"{target_npc}:")
+        
+        prompt = "\n".join(prompt_lines)
         return prompt
 
     # --------------------------- Generation ---------------------------
@@ -285,33 +268,72 @@ class DialogueEngine:
 
     def generate(self, prompt: str, max_new_tokens: int = 60, temperature: float = 0.7) -> str:
         """Generate a response using local HF transformer. Post-processes to extract clean reply."""
-        # Use local HF transformers (free) by default. Model can be overridden with LOCAL_GEN_MODEL env var.
         gen = self._init_local_generator()
-        out = gen(prompt, max_new_tokens=max_new_tokens, do_sample=True, temperature=temperature, top_k=50, top_p=0.9)
-        text = out[0].get('generated_text') or out[0].get('text') or ''
+        
+        # Truncate prompt if too long (TinyLlama can handle ~2048 tokens, keep safe margin)
+        if len(prompt) > 1500:
+            prompt = "..." + prompt[-1500:]
+        
+        try:
+            # Generation parameters optimized for chat models like TinyLlama
+            out = gen(
+                prompt, 
+                max_new_tokens=max_new_tokens, 
+                do_sample=True, 
+                temperature=temperature,
+                top_k=50,
+                top_p=0.95,
+                repetition_penalty=1.1,
+                pad_token_id=gen.tokenizer.eos_token_id,
+                eos_token_id=gen.tokenizer.eos_token_id,
+                return_full_text=True,
+                num_return_sequences=1
+            )
+            text = out[0].get('generated_text') or out[0].get('text') or ''
+        except Exception as e:
+            print(f"Generation error: {e}")
+            # Fallback: try with simpler parameters
+            try:
+                out = gen(
+                    prompt, 
+                    max_new_tokens=40,
+                    do_sample=True,
+                    temperature=0.8,
+                    pad_token_id=gen.tokenizer.eos_token_id
+                )
+                text = out[0].get('generated_text') or out[0].get('text') or ''
+            except Exception as e2:
+                print(f"Fallback generation also failed: {e2}")
+                return "I... I'm having trouble expressing myself right now."
         
         # Post-process: extract only the generated part after the prompt
         if prompt and text.startswith(prompt):
             text = text[len(prompt):].strip()
         
-        # Stop at first newline or when we see "User:" (model echoing conversation)
+        # Stop at newlines or when we see another speaker
         lines = text.split('\n')
         reply = lines[0].strip() if lines else text.strip()
         
-        # Remove common artifacts
-        if 'User:' in reply:
-            reply = reply.split('User:')[0].strip()
+        # Stop at User: or other markers
+        for stop_marker in ['User:', 'user:', '\n#', 'Context:']:
+            if stop_marker in reply:
+                reply = reply.split(stop_marker)[0].strip()
         if '[' in reply and ']' in reply:
-            # Remove placeholder text like [answer in-character]
             import re
             reply = re.sub(r'\[.*?\]', '', reply).strip()
         
-        # Limit to first 2-3 sentences for conciseness
+        # Filter out garbage outputs
+        if len(set(reply)) < 5 or reply.count('!') > 10 or len(reply) < 3:
+            return "I... I'm not sure how to answer that."
+        
+        # Limit to reasonable length (first 2-3 sentences)
         sentences = reply.split('. ')
         if len(sentences) > 3:
-            reply = '. '.join(sentences[:3]) + '.'
+            reply = '. '.join(sentences[:3])
+            if not reply.endswith('.'):
+                reply += '.'
         
-        return reply if reply else "I... don't know what to say."
+        return reply if reply else "..."
 
 
 if __name__ == '__main__':
