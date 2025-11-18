@@ -20,7 +20,7 @@ try:
     VECTOR_STORE_AVAILABLE = True
 except ImportError:
     VECTOR_STORE_AVAILABLE = False
-    print("⚠️ Vector store not available (sentence-transformers not installed)")
+    print("Warning: Vector store not available (sentence-transformers not installed)")
 
 app = Flask(__name__, static_folder='public', static_url_path='')
 CORS(app)
@@ -30,42 +30,66 @@ agent_manager = AgentManager()
 
 # Initialize vector store (optional)
 vector_store = None
+_agents_initialized = False
 
 # Initialize agents
 def initialize_agents():
     """Initialize all available agents"""
+    global _agents_initialized
     
-    csv_path = os.path.join(os.path.dirname(__file__), 'data', 'nick_valentine_dialogue.csv')
+    # Prevent re-initialization during Flask reloader
+    if _agents_initialized:
+        print("Agents already initialized, skipping...")
+        return
     
-    # Initialize Vector Store (if available)
-    global vector_store
-    if VECTOR_STORE_AVAILABLE:
-        try:
-            print("🔄 Loading ChromaDB...")
-            db_path = os.path.join(os.path.dirname(__file__), 'chroma_db_nick_valentine')
-            vector_store = get_vector_store(db_path)
-            print("✅ ChromaDB ready!")
-        except Exception as e:
-            print(f"⚠️ ChromaDB failed: {e}")
-    
-    # HuggingFace Agent (TinyLlama) - Primary agent, uses vector DB for better context
-    # HF_TOKEN is optional - TinyLlama works without authentication
-    hf_token = os.getenv('HF_TOKEN')  # Optional
+    # Check if we're in the Flask reloader process
+    # The reloader runs code twice - skip initialization in the parent process
+    if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+        print("Waiting for Flask reloader...")
+        return
     
     try:
-        print("🔄 Initializing HuggingFace agent (TinyLlama)...")
-        if not hf_token:
-            print("   (Running without HF_TOKEN - this is fine for TinyLlama)")
+        csv_path = os.path.join(os.path.dirname(__file__), 'data', 'nick_valentine_dialogue.csv')
         
-        hf_agent = HuggingFaceAgent(
-            csv_path=csv_path,
-            model_name=os.getenv('HF_MODEL', 'TinyLlama/TinyLlama-1.1B-Chat-v1.0')
-        )
-        if hf_agent.initialize():
-            agent_manager.register_agent('huggingface', hf_agent)
-            print("✅ HuggingFace agent (TinyLlama) initialized successfully!")
+        # Initialize Vector Store (if available)
+        global vector_store
+        if VECTOR_STORE_AVAILABLE:
+            try:
+                print("Loading ChromaDB...")
+                db_path = os.path.join(os.path.dirname(__file__), 'chroma_db_nick_valentine')
+                vector_store = get_vector_store(db_path)
+                print("ChromaDB ready!")
+            except Exception as e:
+                print(f"Warning: ChromaDB failed: {e}")
+        
+        # HuggingFace Agent (Qwen 2.5 3B) - Primary agent, uses vector DB for better context
+        # HF_TOKEN is optional - Qwen models don't require authentication
+        hf_token = os.getenv('HF_TOKEN')  # Optional
+        
+        try:
+            model_name = os.getenv('HF_MODEL', 'Qwen/Qwen2.5-3B-Instruct')
+            
+            print("Initializing HuggingFace agent (Qwen 2.5 3B)...")
+            if not hf_token:
+                print("   (Running without HF_TOKEN - Qwen models don't require authentication)")
+            
+            hf_agent = HuggingFaceAgent(
+                csv_path=csv_path,
+                model_name=model_name
+            )
+            init_result = hf_agent.initialize()
+            if init_result:
+                agent_manager.register_agent('huggingface', hf_agent)
+                print("HuggingFace agent (Qwen 2.5 3B) initialized successfully!")
+                _agents_initialized = True
+            else:
+                print("Error: HuggingFace agent initialization returned False - check errors above")
+        except Exception as e:
+            print(f"Error: Failed to initialize HuggingFace agent: {e}")
+            import traceback
+            traceback.print_exc()
     except Exception as e:
-        print(f"⚠️  Failed to initialize HuggingFace agent: {e}")
+        print(f"Critical error during initialization: {e}")
         import traceback
         traceback.print_exc()
 
@@ -188,29 +212,33 @@ def health():
 
 
 if __name__ == '__main__':
-    print("\n🎮 Nick Valentine Dialogue Generator (Python/Flask)")
-    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    
-    # Initialize agents
-    initialize_agents()
-    
-    if not agent_manager.agents:
-        print("⚠️  No agents initialized! Please configure API keys in .env")
-        exit(1)
-    
-    print(f"✓ Active agent: {agent_manager.active_agent}")
-    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    # Only initialize and print in the main process (not reloader parent)
+    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        print("\nNick Valentine Dialogue Generator (Python/Flask)")
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        
+        # Initialize agents
+        initialize_agents()
+        
+        if not agent_manager.agents:
+            print("Error: No agents initialized! Please check the errors above.")
+            print("Warning: The Flask server will still start, but dialogue generation will not work.")
+            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        else:
+            print(f"Active agent: {agent_manager.active_agent}")
+            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        
+        port = int(os.getenv('PORT', 3000))
+        print(f"Server running at http://localhost:{port}")
+        print(f"API endpoints:")
+        print(f"   POST   /api/generate        - Generate dialogue")
+        print(f"   GET    /api/agents          - List all agents")
+        print(f"   POST   /api/agents/switch   - Switch active agent")
+        print(f"   GET    /api/agents/active   - Get active agent info")
+        print(f"   GET    /api/history         - Get conversation history")
+        print(f"   POST   /api/reset           - Reset conversation")
+        print(f"   GET    /api/export          - Export conversation")
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
     
     port = int(os.getenv('PORT', 3000))
-    print(f"🌐 Server running at http://localhost:{port}")
-    print(f"📊 API endpoints:")
-    print(f"   POST   /api/generate        - Generate dialogue")
-    print(f"   GET    /api/agents          - List all agents")
-    print(f"   POST   /api/agents/switch   - Switch active agent")
-    print(f"   GET    /api/agents/active   - Get active agent info")
-    print(f"   GET    /api/history         - Get conversation history")
-    print(f"   POST   /api/reset           - Reset conversation")
-    print(f"   GET    /api/export          - Export conversation")
-    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
-    
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=True, use_reloader=True)

@@ -1,11 +1,12 @@
 node_modules/
-venv/
+.venv/
 .env
 *.log
 .DS_Store
 dist/
 build/
 __pycache__/
+__pycache__
 *.pyc
 *.pyo
 *.egg-info/

@@ -12,7 +12,7 @@ from dialogue_processor import DialogueProcessor
 class HuggingFaceAgent(BaseDialogueAgent):
     """HuggingFace-based dialogue agent using transformer models + vector search"""
     
-    def __init__(self, csv_path: str, model_name: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"):
+    def __init__(self, csv_path: str, model_name: str = "Qwen/Qwen2.5-3B-Instruct"):
         """
         Initialize HuggingFace agent
         
@@ -37,9 +37,9 @@ class HuggingFaceAgent(BaseDialogueAgent):
             # Check for HF token
             hf_token = os.environ.get('HF_TOKEN')
             if not hf_token:
-                print("⚠️ Warning: HF_TOKEN not found in environment")
+                print("Warning: HF_TOKEN not found in environment")
             
-            print(f"🔄 Loading HuggingFace model: {self.model_name}")
+            print(f"Loading HuggingFace model: {self.model_name}")
             print(f"   Using device: {self.device}")
             
             # Load tokenizer and model
@@ -53,11 +53,33 @@ class HuggingFaceAgent(BaseDialogueAgent):
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
             
-            self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_name,
-                token=hf_token,
-                torch_dtype=torch.float16 if self.device == "cuda" else torch.float32
-            )
+            # Use memory-efficient loading to avoid paging file issues
+            model_kwargs = {
+                'torch_dtype': torch.float16 if self.device == "cuda" else torch.float32,
+                'low_cpu_mem_usage': True,  # Reduces memory usage during loading
+            }
+            if hf_token:
+                model_kwargs['token'] = hf_token
+            
+            try:
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_name,
+                    **model_kwargs
+                )
+            except OSError as e:
+                if "paging file" in str(e) or "1455" in str(e):
+                    print("Error: Not enough memory to load model. Trying with device_map='cpu'...")
+                    # Try loading directly to CPU first, then move to GPU if needed
+                    model_kwargs['device_map'] = 'cpu'
+                    self.model = AutoModelForCausalLM.from_pretrained(
+                        self.model_name,
+                        **model_kwargs
+                    )
+                    if self.device == "cuda":
+                        print("Moving model to GPU...")
+                        self.model = self.model.to(self.device)
+                else:
+                    raise
             
             self.model.to(self.device)
             self.model.eval()  # Set to evaluation mode
@@ -71,22 +93,22 @@ class HuggingFaceAgent(BaseDialogueAgent):
                 batch_size=1  # Single generation for faster response
             )
             
-            print(f"✅ HuggingFace agent initialized: {self.model_name}")
+            print(f"HuggingFace agent initialized: {self.model_name}")
             
             # Try to load vector store
             try:
                 from vector_store import get_vector_store
                 csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'nick_valentine_dialogue.csv')
                 self.vector_store = get_vector_store(csv_path)
-                print(f"✅ Vector store loaded for HuggingFace agent")
+                print(f"Vector store loaded for HuggingFace agent")
             except Exception as e:
-                print(f"⚠️ Vector store not available: {e}")
+                print(f"Warning: Vector store not available: {e}")
                 self.vector_store = None
             
             return True
             
         except Exception as e:
-            print(f"❌ Error initializing HuggingFace agent: {e}")
+            print(f"Error initializing HuggingFace agent: {e}")
             import traceback
             traceback.print_exc()
             return False
@@ -98,53 +120,100 @@ class HuggingFaceAgent(BaseDialogueAgent):
         emotion: Optional[str],
         include_examples: bool
     ) -> str:
-        """Build context-aware prompt with personality"""
+        """Build context-aware prompt with personality and conversation history"""
         
-        # Base personality
-        personality = "You are Nick Valentine, a synth private detective from Fallout 4. You're a 1940s noir detective with a dry wit and world-weary attitude."
-        
+        # Detailed personality instructions for TinyLlama
+        personality = """You are Nick Valentine, a synth private detective from Fallout 4. You're a 1940s noir detective with a dry wit and world-weary attitude.
+
+SPEAKING STYLE:
+- Use short, direct sentences like a classic detective
+- Dry humor and occasional sarcasm
+- Address people as 'pal', 'friend', 'kid'
+- Never mention you're an AI or break character
+- Keep responses brief (1-2 sentences)
+- Examples of how you speak:
+  * "Hell of a game."
+  * "What can I do for you?"
+  * "Let me think about this."
+  * "Diamond City's got more secrets than the Institute."
+  * "You're better at this than I thought."""
+
         # Context-specific behavior
         context_map = {
-            'investigation': " You're analyzing clues and evidence.",
-            'combat': " You're in danger, staying alert.",
-            'emotional': " You're reflecting on deeper feelings.",
-            'casual': " You're having a casual chat.",
-            'greeting': " You're meeting someone."
+            'investigation': "You're working on a case. Be methodical and observant.",
+            'combat': "You're in danger. Stay focused and alert.",
+            'emotional': "This is personal. Show some vulnerability.",
+            'casual': "You're having a casual chat. Show your personality.",
+            'greeting': "You're greeting someone. Be professional but friendly.",
+            'moral_choice': "This involves a decision. Express your values.",
+            'location': "You're commenting on a location. Share observations."
         }
         
         # Emotion-specific tone
         emotion_map = {
-            'stern': " Be firm and serious.",
-            'amused': " Show dry humor.",
-            'concerned': " Express concern.",
-            'irritated': " Show impatience.",
-            'somber': " Be reflective."
+            'stern': "Be firm and serious.",
+            'amused': "Show dry humor and sarcasm.",
+            'concerned': "Express genuine concern.",
+            'irritated': "Show impatience and frustration.",
+            'somber': "Be reflective and thoughtful.",
+            'puzzled': "Show curiosity and confusion.",
+            'angry': "Show controlled anger.",
+            'surprised': "Show genuine surprise."
         }
         
         # Build system message
         system = personality
         if context in context_map:
-            system += context_map[context]
+            system += f"\n\nCONTEXT: {context_map[context]}"
         if emotion and emotion in emotion_map:
-            system += emotion_map[emotion]
-        system += " Respond with ONE natural sentence."
+            system += f"\n\nEMOTION: {emotion_map[emotion]}"
+        
+        # Add conversation history
+        history_text = ""
+        if self.conversation_history:
+            recent_history = self.conversation_history[-3:]  # Last 3 exchanges
+            history_text = "\n\nRECENT CONVERSATION:\n"
+            for exchange in recent_history:
+                history_text += f"User: {exchange['user']}\n"
+                history_text += f"Nick: {exchange['agent']}\n"
         
         # Add examples if requested and available
-        examples = ""
+        examples_text = ""
         if include_examples and self.vector_store:
             try:
                 vector_examples = self.vector_store.get_contextual_examples(
                     user_input=user_input,
                     context=context,
                     emotion=emotion,
-                    n_results=2
+                    n_results=3
                 )
                 if vector_examples:
-                    examples = f"\n\nExample responses:\n{vector_examples}"
+                    examples_text = f"\n\nEXAMPLE NICK RESPONSES:\n{vector_examples}"
             except Exception as e:
                 pass
         
-        prompt = f"<|system|>\n{system}{examples}</s>\n<|user|>\n{user_input}</s>\n<|assistant|>\n"
+        # Fallback to CSV examples if vector store fails
+        if not examples_text and include_examples:
+            try:
+                csv_examples = self.dialogue_processor.get_random_examples(2)
+                if csv_examples:
+                    example_list = [ex.get('RESPONSE TEXT', '').strip() for ex in csv_examples if ex.get('RESPONSE TEXT')]
+                    if example_list:
+                        examples_text = "\n\nEXAMPLE NICK RESPONSES:\n" + "\n".join([f'"{ex}"' for ex in example_list])
+            except Exception as e:
+                pass
+        
+        # Build final prompt - use Qwen's chat template if available, otherwise fallback
+        if hasattr(self.tokenizer, 'apply_chat_template') and self.tokenizer.chat_template is not None:
+            # Use proper chat template for Qwen
+            messages = [
+                {"role": "system", "content": f"{system}{history_text}{examples_text}"},
+                {"role": "user", "content": user_input}
+            ]
+            prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        else:
+            # Fallback to TinyLlama format
+            prompt = f"<|system|>\n{system}{history_text}{examples_text}\n</s>\n<|user|>\n{user_input}</s>\n<|assistant|>\n"
         
         return prompt
     
@@ -164,30 +233,40 @@ class HuggingFaceAgent(BaseDialogueAgent):
             # Build prompt
             prompt = self.build_prompt(user_input, context, emotion, include_examples)
             
-            # Generate response with balanced quality/speed
+            # Generate response with parameters optimized for character consistency
             outputs = self.pipeline(
                 prompt,
-                max_new_tokens=50,
+                max_new_tokens=80,  # Increased for better sentence completion
                 do_sample=True,
-                temperature=0.85,
-                top_k=40,
-                top_p=0.92,
+                temperature=0.7,  # Lower temperature for more consistent character voice
+                top_k=50,
+                top_p=0.9,
                 num_return_sequences=1,
                 pad_token_id=self.tokenizer.eos_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                repetition_penalty=1.15
+                repetition_penalty=1.2,  # Higher to avoid repetition
+                no_repeat_ngram_size=3  # Prevent repeating 3-word phrases
             )
             
-            # Extract response (after <|assistant|> tag)
+            # Extract response (handle both Qwen and TinyLlama formats)
             generated_text = outputs[0]['generated_text']
             
-            if "<|assistant|>" in generated_text:
+            # Remove the prompt from the generated text
+            if prompt in generated_text:
+                nick_response = generated_text.split(prompt)[-1].strip()
+            elif "<|assistant|>" in generated_text:
                 nick_response = generated_text.split("<|assistant|>")[-1].strip()
+            elif "<|im_start|>assistant" in generated_text:
+                # Qwen format
+                nick_response = generated_text.split("<|im_start|>assistant")[-1].strip()
+                # Remove Qwen's end token if present
+                nick_response = nick_response.split("<|im_end|>")[0].strip()
             else:
                 nick_response = generated_text[len(prompt):].strip()
             
             # Remove special tokens
             nick_response = nick_response.split("</s>")[0].strip()
+            nick_response = nick_response.split("<|im_end|>")[0].strip()  # Qwen end token
             nick_response = nick_response.split("<|")[0].strip()
             
             # Remove meta-text that indicates model confusion
@@ -222,7 +301,7 @@ class HuggingFaceAgent(BaseDialogueAgent):
             
             # Validate response quality
             if len(nick_response.strip()) < 5 or not any(c.isalpha() for c in nick_response):
-                print(f"⚠️ Generated response invalid: '{nick_response}'")
+                print(f"Warning: Generated response invalid: '{nick_response}'")
                 # Context-aware fallback
                 fallbacks = {
                     'investigation': "Let me think about this.",
@@ -245,7 +324,7 @@ class HuggingFaceAgent(BaseDialogueAgent):
             }
             
         except Exception as e:
-            print(f"❌ Error generating response: {e}")
+            print(f"Error generating response: {e}")
             import traceback
             traceback.print_exc()
             
