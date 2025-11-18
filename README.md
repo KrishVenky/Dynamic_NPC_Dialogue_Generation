@@ -1,30 +1,68 @@
 # Nick Valentine Dialogue Generator
 
-**Multi-Agent Dialogue System with Vector DB & Agentic Pipeline**
+**Multi-Agent Dialogue System with TinyLlama (100% Free & Local)**
 
-## 🚀 Quick Start
+---
+
+## 🚀 Quick Start (3 Steps)
 
 ### 1. Install Dependencies
-```powershell
-pip install -r requirements.txt
+```bash
+source venv/bin/activate
+pip install flask flask-cors python-dotenv pandas transformers torch sentence-transformers chromadb
 ```
 
-### 2. Configure API Keys
-Edit `.env`:
-```env
-GEMINI_API_KEY=your_gemini_key_here
-HF_TOKEN=your_huggingface_token_here
-GEMINI_MODEL=gemini-1.5-flash
-PORT=3000
-```
-
-### 3. Run Server
-```powershell
+### 2. Run Server
+```bash
 python app.py
 ```
 
-### 4. Open Browser
+### 3. Open Browser
 Navigate to `http://localhost:3000`
+
+---
+
+## ✨ NEW Features (Just Fixed!)
+
+### ✅ Conversation Memory
+- Remembers last 3 exchanges automatically
+- Nick can follow the conversation thread
+- Natural multi-turn dialogues
+
+### ✅ Context-Aware Responses  
+- **Investigation** → Detective mode
+- **Combat** → Alert, ready for danger
+- **Casual** → Relaxed conversation
+- **Emotional** → Deep, personal topics
+
+### ✅ Emotion Control
+- **Neutral** → Standard detective tone
+- **Amused** → Dry humor, sarcastic
+- **Stern** → Serious, no-nonsense
+- **Concerned** → Worried, caring
+
+### ✅ 100% Free & Local
+- Uses TinyLlama (no API costs)
+- Runs on your machine
+- No rate limits
+- No safety filters blocking responses
+
+---
+
+## 💬 Example Conversation
+
+```
+You: "Hello Nick"
+Nick: "Hello. What can I do for you?"
+
+You: "I need help with a murder case"
+Nick: "A murder case? Tell me what you know."
+
+You: "The victim was found at the docks"
+Nick: "The docks, huh? That's rough territory. Any witnesses?"
+```
+
+Notice how Nick **remembers** you're discussing a murder case!
 
 ---
 
@@ -67,25 +105,25 @@ AFML_Project_NPC_Final/
 - **Extensible Architecture**: Easy to add new agents (HF, local models, etc.)
 
 ### Current Agents
-- ✅ **Gemini Agent** (Active) - Google's Gemini 1.5 Flash
-- 🔜 **HuggingFace Agent** - Coming soon
-- 🔜 **Local Model Agent** - Coming soon
+- ✅ **HuggingFace Agent** (Primary) - TinyLlama 1.1B Chat (FREE, local)
+- ✅ **Vector DB Integration** - ChromaDB for context retrieval
 
 ### Planned Features
-- 🔜 ChromaDB Vector Search for context retrieval
-- 🔜 RAG (Retrieval Augmented Generation)
+- ✅ ChromaDB Vector Search for context retrieval
+- ✅ RAG (Retrieval Augmented Generation)
 - 🔜 Agentic Pipeline for multi-step workflows
 - 🔜 Model performance metrics
+- 🔜 Fine-tuned character models
 
 ---
 
 ## 🎮 Usage
 
-1. **Select Agent**: Choose from dropdown (Gemini, HF, etc.)
+1. **Agent is Auto-Selected**: HuggingFace/TinyLlama is the primary agent
 2. **Set Context**: Investigation, Combat, Casual, etc.
 3. **Choose Emotion**: Neutral, Amused, Stern, etc.
 4. **Chat**: Type and press Enter
-5. **Switch Agents**: Select different model → conversation resets
+5. **100% Free**: No API keys required, runs locally on your machine
 
 ---
 
@@ -141,10 +179,11 @@ See [REFACTORING_ROADMAP.md](docs/REFACTORING_ROADMAP.md) for detailed plans:
 ## 💡 Tech Stack
 
 - **Backend**: Flask, Python 3.10+
-- **AI**: Google Gemini, HuggingFace Transformers
-- **Vector DB**: ChromaDB (planned)
+- **AI**: TinyLlama 1.1B Chat (HuggingFace Transformers)
+- **Vector DB**: ChromaDB
 - **Frontend**: Vanilla JavaScript
 - **Data**: Pandas, CSV
+- **Cost**: $0 (100% free, runs locally)
 
 ---
 

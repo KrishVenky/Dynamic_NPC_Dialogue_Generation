@@ -62,12 +62,13 @@ class HuggingFaceAgent(BaseDialogueAgent):
             self.model.to(self.device)
             self.model.eval()  # Set to evaluation mode
             
-            # Create text generation pipeline
+            # Create text generation pipeline optimized for speed
             self.pipeline = pipeline(
                 "text-generation",
                 model=self.model,
                 tokenizer=self.tokenizer,
-                device=0 if self.device == "cuda" else -1
+                device=0 if self.device == "cuda" else -1,
+                batch_size=1  # Single generation for faster response
             )
             
             print(f"✅ HuggingFace agent initialized: {self.model_name}")
@@ -97,10 +98,45 @@ class HuggingFaceAgent(BaseDialogueAgent):
         emotion: Optional[str],
         include_examples: bool
     ) -> str:
-        """Build TinyLlama chat prompt with vector examples"""
+        """Build TinyLlama chat prompt with conversation history and examples"""
         
-        # TinyLlama chat format
-        system_msg = "You are Nick Valentine, a 1940s detective from Fallout 4. You're professional, observant, and have a dry wit. Keep responses brief (1-2 sentences)."
+        # Build character description based on context and emotion
+        base_personality = "You are Nick Valentine, a synth detective from Fallout 4. You're a 1940s-style noir detective: world-weary, cynical but caring, with dry wit."
+        
+        context_additions = {
+            'investigation': " You're analyzing evidence and looking for clues.",
+            'combat': " You're in a dangerous situation, alert and ready.",
+            'emotional': " You're reflecting on deeper feelings and memories.",
+            'casual': " You're having a relaxed conversation.",
+            'greeting': " You're meeting someone."
+        }
+        
+        emotion_additions = {
+            'stern': " Speak firmly and seriously.",
+            'amused': " Show dry humor and amusement.",
+            'concerned': " Express genuine concern.",
+            'irritated': " Show impatience or annoyance.",
+            'somber': " Be reflective and serious."
+        }
+        
+        system_msg = base_personality
+        if context in context_additions:
+            system_msg += context_additions[context]
+        if emotion and emotion in emotion_additions:
+            system_msg += emotion_additions[emotion]
+        
+        system_msg += " Keep responses VERY brief (1 sentence). Stay in character."
+        
+        # Add conversation history for context
+        history_text = ""
+        if self.conversation_history:
+            recent_history = self.conversation_history[-3:]  # Last 3 exchanges
+            history_lines = []
+            for h in recent_history:
+                history_lines.append(f"User: {h['user']}")
+                history_lines.append(f"Nick: {h['agent']}")
+            if history_lines:
+                history_text = "\n\nRecent conversation:\n" + "\n".join(history_lines)
         
         # Add vector examples if available
         examples = ""
@@ -113,12 +149,12 @@ class HuggingFaceAgent(BaseDialogueAgent):
                     n_results=2
                 )
                 if vector_examples:
-                    examples = f"\n\nExample responses:\n{vector_examples}"
+                    examples = f"\n\nExample Nick Valentine quotes:\n{vector_examples}"
             except Exception as e:
                 print(f"⚠️ Vector search failed: {e}")
         
         # TinyLlama format: <|system|>\n{system}\n<|user|>\n{user}\n<|assistant|>\n
-        prompt = f"<|system|>\n{system_msg}{examples}</s>\n<|user|>\n{user_input}</s>\n<|assistant|>\n"
+        prompt = f"<|system|>\n{system_msg}{examples}{history_text}</s>\n<|user|>\n{user_input}</s>\n<|assistant|>\n"
         
         return prompt
     
@@ -138,19 +174,16 @@ class HuggingFaceAgent(BaseDialogueAgent):
             # Build prompt
             prompt = self.build_prompt(user_input, context, emotion, include_examples)
             
-            # Generate response with TinyLlama settings
+            # Generate response with OPTIMIZED settings for macOS CPU
             outputs = self.pipeline(
                 prompt,
-                max_new_tokens=30,  # Very short - 1-2 sentences max
-                do_sample=True,
-                temperature=0.9,
-                top_p=0.92,
-                top_k=35,
+                max_new_tokens=25,  # Short and fast (1 sentence)
+                do_sample=True,  # Enable sampling for variety
+                temperature=0.7,  # Deterministic but allows some variation
+                top_k=10,  # Very small for speed
                 num_return_sequences=1,
                 pad_token_id=self.tokenizer.eos_token_id,
-                eos_token_id=self.tokenizer.eos_token_id,
-                repetition_penalty=1.4,
-                no_repeat_ngram_size=3
+                eos_token_id=self.tokenizer.eos_token_id
             )
             
             # Extract response (after <|assistant|> tag)
@@ -163,23 +196,39 @@ class HuggingFaceAgent(BaseDialogueAgent):
                 # Fallback - take everything after prompt
                 nick_response = generated_text[len(prompt):].strip()
             
-            # Clean up - stop at special tokens, newlines, or excessive length
+            # Clean up - stop at special tokens
             nick_response = nick_response.split("</s>")[0].strip()
             nick_response = nick_response.split("<|")[0].strip()
-            nick_response = nick_response.split("\n")[0].strip()  # First line only
             
-            # Take max 2 sentences
-            sentences = nick_response.split('. ')
-            if len(sentences) > 2:
-                nick_response = '. '.join(sentences[:2]) + '.'
+            # Stop at User: or Nick: (model echoing)
+            for stop_word in ['User:', 'user:', 'Nick:', 'nick:', '\n\n']:
+                if stop_word in nick_response:
+                    nick_response = nick_response.split(stop_word)[0].strip()
             
-            # Remove quotes
-            nick_response = nick_response.strip('"\'').strip()
+            # Take first line if multiple lines
+            if '\n' in nick_response:
+                nick_response = nick_response.split('\n')[0].strip()
             
-            # Fallback if response is empty or too short
-            if len(nick_response.strip()) < 5:
-                print(f"⚠️ Generated response too short: '{nick_response}'")
-                fallback = self.dialogue_processor.get_random_examples(1)
+            # Limit to 3 sentences max for natural dialogue
+            sentences = [s.strip() for s in nick_response.split('. ') if s.strip()]
+            if len(sentences) > 3:
+                nick_response = '. '.join(sentences[:3])
+                if not nick_response.endswith('.'):
+                    nick_response += '.'
+            
+            # Remove quotes if wrapped
+            nick_response = nick_response.strip('"\'\'').strip()
+            
+            # Remove common artifacts
+            nick_response = nick_response.replace('[', '').replace(']', '')
+            
+            # Validate response quality
+            if len(nick_response.strip()) < 5 or len(set(nick_response)) < 5:
+                print(f"⚠️ Generated response invalid: '{nick_response}'")
+                # Try to get contextual fallback
+                fallback = self.dialogue_processor.get_examples_by_context(context, 1)
+                if not fallback:
+                    fallback = self.dialogue_processor.get_random_examples(1)
                 nick_response = fallback[0].get('RESPONSE TEXT', "What can I do for you?") if fallback else "What can I do for you?"
             
             # Add to history

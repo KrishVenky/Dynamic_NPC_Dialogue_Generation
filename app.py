@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 import os
 
 from agents.agent_manager import AgentManager
-from agents.gemini_agent import GeminiAgent
 from agents.huggingface_agent import HuggingFaceAgent
 
 # Load environment variables
@@ -49,38 +48,26 @@ def initialize_agents():
         except Exception as e:
             print(f"⚠️ ChromaDB failed: {e}")
     
-    # Gemini Agent - Simple workflow, no vector DB
-    gemini_api_key = os.getenv('GEMINI_API_KEY')
-    if gemini_api_key:
-        try:
-            gemini_agent = GeminiAgent(
-                api_key=gemini_api_key,
-                model_name=os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
-            )
-            gemini_agent.initialize()
-            agent_manager.register_agent('gemini', gemini_agent)
-        except Exception as e:
-            print(f"⚠️  Failed to initialize Gemini agent: {e}")
-    else:
-        print("⚠️  GEMINI_API_KEY not found in .env")
+    # HuggingFace Agent (TinyLlama) - Primary agent, uses vector DB for better context
+    # HF_TOKEN is optional - TinyLlama works without authentication
+    hf_token = os.getenv('HF_TOKEN')  # Optional
     
-    # HuggingFace Agent - Uses vector DB for better context
-    hf_token = os.getenv('HF_TOKEN')
-    if hf_token:
-        try:
-            print("🔄 Initializing HuggingFace agent (TinyLlama with vector DB)...")
-            hf_agent = HuggingFaceAgent(
-                csv_path=csv_path,
-                model_name=os.getenv('HF_MODEL', 'TinyLlama/TinyLlama-1.1B-Chat-v1.0')
-            )
-            if hf_agent.initialize():
-                agent_manager.register_agent('huggingface', hf_agent)
-        except Exception as e:
-            print(f"⚠️  Failed to initialize HuggingFace agent: {e}")
-            import traceback
-            traceback.print_exc()
-    else:
-        print("⚠️  HF_TOKEN not found in .env")
+    try:
+        print("🔄 Initializing HuggingFace agent (TinyLlama)...")
+        if not hf_token:
+            print("   (Running without HF_TOKEN - this is fine for TinyLlama)")
+        
+        hf_agent = HuggingFaceAgent(
+            csv_path=csv_path,
+            model_name=os.getenv('HF_MODEL', 'TinyLlama/TinyLlama-1.1B-Chat-v1.0')
+        )
+        if hf_agent.initialize():
+            agent_manager.register_agent('huggingface', hf_agent)
+            print("✅ HuggingFace agent (TinyLlama) initialized successfully!")
+    except Exception as e:
+        print(f"⚠️  Failed to initialize HuggingFace agent: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 # Routes
@@ -181,24 +168,12 @@ def cost_estimate():
     """Get cost estimate for number of exchanges"""
     exchanges = int(request.args.get('exchanges', 100))
     
-    # Rough estimates for Gemini 1.5 Flash
-    avg_input_tokens = 500
-    avg_output_tokens = 100
-    
-    total_input_tokens = exchanges * avg_input_tokens
-    total_output_tokens = exchanges * avg_output_tokens
-    
-    # Gemini 1.5 Flash pricing (FREE tier has generous limits)
-    input_cost = (total_input_tokens / 1_000_000) * 0.075
-    output_cost = (total_output_tokens / 1_000_000) * 0.30
-    total_cost = input_cost + output_cost
-    
+    # TinyLlama is completely FREE and runs locally
     return jsonify({
         'exchanges': exchanges,
-        'estimatedInputTokens': total_input_tokens,
-        'estimatedOutputTokens': total_output_tokens,
-        'estimatedCost': f'${total_cost:.4f}',
-        'note': 'Gemini 1.5 Flash has a FREE tier with generous limits!'
+        'estimatedCost': '$0.00',
+        'note': 'TinyLlama runs 100% locally - completely FREE with no API costs!',
+        'model': 'TinyLlama-1.1B-Chat-v1.0'
     })
 
 

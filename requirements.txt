@@ -3,9 +3,6 @@ flask==3.0.3
 flask-cors==5.0.0
 python-dotenv==1.0.1
 
-# AI/ML - Google Gemini
-google-generativeai==0.8.3
-
 # Data Processing (using pre-built wheel)
 pandas==2.1.4
 
