@@ -19,7 +19,6 @@ torchaudio==2.5.1
 # Vector Database & Embeddings
 chromadb==0.5.20
 sentence-transformers==3.3.1
-sentence-transformers==3.3.1
 
 # Additional dependencies for ChromaDB
 pydantic==2.10.2

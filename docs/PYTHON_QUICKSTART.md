@@ -1,116 +1,175 @@
-# Nick Valentine Dialogue Generator - Python/Flask
+# Python Quickstart Guide
 
 ## Quick Start
 
 ### 1. Install Python dependencies
-```powershell
+```bash
 pip install -r requirements.txt
 ```
 
-### 2. Your .env is already configured ✓
-```
-GEMINI_API_KEY=AIzaSyBO9skkGn3DRNdKEKnO8UTYXbUjSxqeAfM
-GEMINI_MODEL=gemini-1.5-flash
-PORT=3000
-```
-
-### 3. Run the Flask server
-```powershell
+### 2. Run the Flask server
+```bash
 python app.py
 ```
 
-### 4. Open browser
+### 3. Open browser
 Navigate to `http://localhost:3000`
 
 ---
 
-## What Changed
+## What This System Does
 
-### ✅ Migrated to Python/Flask
-- **Backend**: Flask server (`app.py`)
-- **Multi-Agent System**: Agent Manager for seamless switching
-- **Modular Design**: Base agent class for easy extension
+This is a dynamic NPC dialogue generation system for Nick Valentine from Fallout 4. It uses a local HuggingFace model (Qwen 2.5 3B Instruct) to generate context-aware, in-character dialogue responses.
 
-### ✅ Agent Architecture
-```
-AgentManager
-  ├── Gemini Agent (✓ Active)
-  ├── HuggingFace Agent (TODO)
-  ├── Local Model Agent (TODO)
-  └── Custom Agent (TODO)
-```
-
-### ✅ New Features
-- **Agent Switching**: Select different models in dropdown
-- **Fresh Conversations**: Each agent switch resets dialogue
-- **Seamless UX**: Switch agents without reloading page
-- **Extensible**: Easy to add new agents
+### Key Features:
+- **Conversation Memory**: Remembers last 3 exchanges
+- **Context-Aware**: Different responses for Investigation/Combat/Casual/etc.
+- **Emotion Control**: Adjusts tone based on selected emotion
+- **Vector Search**: Uses ChromaDB to find similar dialogue examples
+- **100% Free**: Runs locally, no API costs
 
 ---
 
-## Project Structure (Python)
+## Project Structure
 
 ```
+Dynamic_NPC_Dialogue_Generation/
 ├── app.py                      # Flask server
-├── agents/
-│   ├── __init__.py
+├── agents/                     # Agent implementations
 │   ├── base_agent.py          # Base agent interface
 │   ├── agent_manager.py       # Multi-agent manager
-│   └── gemini_agent.py        # Gemini implementation
-├── nick_personality.py        # Character profile
+│   └── huggingface_agent.py   # HuggingFace/Qwen implementation
 ├── dialogue_processor.py      # CSV parser
-├── public/                    # Frontend (updated)
-│   ├── index.html
-│   ├── styles.css
-│   └── app.js
-├── requirements.txt           # Python dependencies
-└── REFACTORING_ROADMAP.md    # Future plans
+├── vector_store.py            # ChromaDB integration
+├── public/                    # Frontend files
+├── data/                      # Dialogue CSV data
+└── requirements.txt           # Python dependencies
 ```
 
 ---
 
-## API Endpoints (Updated)
+## Environment Setup
 
-### Dialogue
-- `POST /api/generate` - Generate response with active agent
-- `GET /api/history` - Get conversation history
-- `POST /api/reset` - Reset active agent's conversation
-- `GET /api/export` - Export conversation
+### Optional Environment Variables
 
-### Agent Management (NEW)
-- `GET /api/agents` - List all available agents
-- `POST /api/agents/switch` - Switch active agent
-- `GET /api/agents/active` - Get active agent info
+Create a `.env` file if you want to customize:
+
+```env
+HF_TOKEN=your_token_here  # Optional - Qwen models don't require auth
+HF_MODEL=Qwen/Qwen2.5-3B-Instruct  # Default model
+PORT=3000
+```
+
+**Note**: Qwen models don't require authentication, so `HF_TOKEN` is optional.
 
 ---
 
-## Next Steps
+## First Run
 
-### Immediate
-1. Test the Flask app
-2. Verify agent switching works
+On first run, the model will download automatically (~6GB). This takes 5-10 minutes depending on your internet connection.
 
-### Future (see REFACTORING_ROADMAP.md)
-- Add ChromaDB for vector search
-- Integrate HuggingFace models
-- Build agentic pipeline
-- Add model performance metrics
+**Requirements:**
+- Internet connection (for first download)
+- ~8GB RAM minimum
+- ~10GB free disk space
+
+---
+
+## Usage
+
+1. **Start the server**: `python app.py`
+2. **Open browser**: `http://localhost:3000`
+3. **Select context**: Investigation, Combat, Casual, etc.
+4. **Select emotion**: Neutral, Amused, Stern, etc.
+5. **Type your message** and press Enter
+6. **Nick responds** with context-aware dialogue
+
+---
+
+## API Endpoints
+
+### Generate Dialogue
+```bash
+POST /api/generate
+Content-Type: application/json
+
+{
+  "userInput": "What do you think about synths?",
+  "context": "casual",
+  "emotion": "thoughtful",
+  "includeExamples": true
+}
+```
+
+### List Agents
+```bash
+GET /api/agents
+```
+
+### Switch Agent
+```bash
+POST /api/agents/switch
+Content-Type: application/json
+
+{
+  "agentId": "huggingface"
+}
+```
+
+### Get History
+```bash
+GET /api/history
+```
+
+### Reset Conversation
+```bash
+POST /api/reset
+```
 
 ---
 
 ## Troubleshooting
 
-### Import errors when running
-```powershell
-pip install -r requirements.txt
-```
+### "No agents initialized"
+- Check terminal output for errors
+- Ensure transformers and torch are installed: `pip install transformers torch`
+- Check internet connection (model needs to download on first run)
+
+### Slow responses
+- Normal on CPU: 5-10 seconds per response
+- First request is slower (model loading)
+- Consider using GPU if available (automatic if CUDA is installed)
+
+### Model download fails
+- Check internet connection
+- Ensure sufficient disk space (~10GB)
+- Try again - downloads can be interrupted
 
 ### Port already in use
-Change PORT in `.env` file
-
-### No agents initialized
-Verify `GEMINI_API_KEY` is set in `.env`
+- Change PORT in `.env` or command line
+- Or kill the process using port 3000
 
 ---
 
-**Ready to run! Execute: `python app.py`** 🚀
+## Model Information
+
+**Current Model**: Qwen/Qwen2.5-3B-Instruct
+
+- **Provider**: HuggingFace
+- **Size**: ~6GB
+- **Type**: Instruction-tuned language model
+- **Requirements**: ~8GB RAM
+- **Speed**: 5-10 seconds per response (CPU)
+- **Cost**: $0 (runs locally)
+
+---
+
+## Next Steps
+
+- See [README.md](../README.md) for full documentation
+- See [REFACTORING_ROADMAP.md](REFACTORING_ROADMAP.md) for future plans
+- Check `COMPLETE_SETUP_GUIDE.md` for detailed usage instructions
+
+---
+
+Ready to start! Run `python app.py` and open `http://localhost:3000`

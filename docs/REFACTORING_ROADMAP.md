@@ -1,28 +1,28 @@
 # Refactoring Roadmap - Nick Valentine Dialogue System
 
-## Current Status: ✅ Node.js/Express → 🔄 Python/Flask Migration
+## Current Status: Python/Flask Implementation Complete
 
-### Phase 1: Core Backend Migration (IN PROGRESS)
+### Phase 1: Core Backend Migration (COMPLETE)
 - [x] Create Flask server structure
 - [x] Implement multi-agent system architecture
-- [x] Port Gemini dialogue generator to Python
+- [x] Port dialogue generator to Python
 - [x] Create agent manager for seamless switching
-- [ ] Add Hugging Face model integration
-- [ ] Implement vector DB (ChromaDB) for context retrieval
-- [ ] Create agent registry system
+- [x] Add Hugging Face model integration (Qwen 2.5 3B Instruct)
+- [x] Implement vector DB (ChromaDB) for context retrieval
+- [x] Create agent registry system
 
-### Phase 2: Frontend Updates
+### Phase 2: Frontend Updates (COMPLETE)
 - [x] Update API endpoints to match Flask
 - [x] Add agent selection UI
 - [x] Add model switching capability
 - [ ] Add vector DB search visualization
 - [ ] Add agentic pipeline visualization
 
-### Phase 3: Advanced Features (FUTURE)
-- [ ] Implement ChromaDB for semantic dialogue search
-- [ ] Add Hugging Face models (facebook/opt-1.3b, gpt2-medium)
+### Phase 3: Advanced Features (IN PROGRESS)
+- [x] Implement ChromaDB for semantic dialogue search
+- [x] Add Hugging Face models (Qwen 2.5 3B Instruct)
 - [ ] Create multi-agent conversation pipeline
-- [ ] Add RAG (Retrieval Augmented Generation) system
+- [ ] Add RAG (Retrieval Augmented Generation) system improvements
 - [ ] Implement dialogue embeddings cache
 - [ ] Add model performance metrics
 - [ ] Create agent orchestration system
@@ -51,9 +51,8 @@
 ┌─────────────────────────────────────────┐
 │        Agent Manager                     │
 │  ┌───────────────────────────────────┐  │
-│  │  - Gemini Agent                   │  │
-│  │  - HuggingFace Agent              │  │
-│  │  - Local Model Agent              │  │
+│  │  - HuggingFace Agent (Qwen)       │  │
+│  │  - Future: Additional models      │  │
 │  │  - Future: Custom Fine-tuned      │  │
 │  └───────────────────────────────────┘  │
 └─────────────────────────────────────────┘
@@ -84,13 +83,13 @@ User selects Agent → Reset conversation → New agent takes over → Fresh con
 
 ### Backend (Python)
 - **Flask**: Web server
-- **google-generativeai**: Gemini API
 - **transformers**: Hugging Face models
 - **chromadb**: Vector database
 - **sentence-transformers**: Embeddings
 - **pandas**: CSV processing
+- **torch**: Model inference
 
-### Frontend (JavaScript - No changes needed)
+### Frontend (JavaScript)
 - Vanilla JS
 - Fetch API for Flask endpoints
 - Same UI/UX
@@ -99,7 +98,7 @@ User selects Agent → Reset conversation → New agent takes over → Fresh con
 
 ## Notes
 - Each agent maintains independent conversation history
-- Agent switching = fresh start (as requested)
+- Agent switching = fresh start
 - Vector DB improves context retrieval across all agents
 - Agentic pipeline allows future expansion for complex workflows
 - All agents share the Nick Valentine personality profile
@@ -107,8 +106,24 @@ User selects Agent → Reset conversation → New agent takes over → Fresh con
 ---
 
 ## Next Steps
-1. ✅ Migrate to Flask
-2. Test multi-agent switching
-3. Integrate ChromaDB
-4. Add HuggingFace models
-5. Build agentic pipeline foundation
+1. Test multi-agent switching
+2. Optimize ChromaDB queries
+3. Add additional HuggingFace models
+4. Build agentic pipeline foundation
+5. Add performance monitoring
+
+---
+
+## Future Model Options
+
+### Potential Models to Add:
+- **Qwen2.5-7B-Instruct**: Larger, better quality (requires more RAM)
+- **Mistral-7B-Instruct**: Alternative high-quality model
+- **Llama-3-8B-Instruct**: Meta's open model
+- **Fine-tuned models**: Custom trained on Nick's dialogue
+
+### Considerations:
+- Model size vs. quality tradeoff
+- Memory requirements
+- Inference speed
+- Character consistency

@@ -1,15 +1,15 @@
 # Nick Valentine Dialogue Generator
 
-**Multi-Agent Dialogue System with TinyLlama (100% Free & Local)**
+**Multi-Agent Dialogue System with Qwen 2.5 3B Instruct (100% Free & Local)**
 
 ---
 
-## 🚀 Quick Start (3 Steps)
+## Quick Start (3 Steps)
 
 ### 1. Install Dependencies
 ```bash
 source venv/bin/activate
-pip install flask flask-cors python-dotenv pandas transformers torch sentence-transformers chromadb
+pip install -r requirements.txt
 ```
 
 ### 2. Run Server
@@ -22,34 +22,34 @@ Navigate to `http://localhost:3000`
 
 ---
 
-## ✨ NEW Features (Just Fixed!)
+## Features
 
-### ✅ Conversation Memory
+### Conversation Memory
 - Remembers last 3 exchanges automatically
 - Nick can follow the conversation thread
 - Natural multi-turn dialogues
 
-### ✅ Context-Aware Responses  
+### Context-Aware Responses  
 - **Investigation** → Detective mode
 - **Combat** → Alert, ready for danger
 - **Casual** → Relaxed conversation
 - **Emotional** → Deep, personal topics
 
-### ✅ Emotion Control
+### Emotion Control
 - **Neutral** → Standard detective tone
 - **Amused** → Dry humor, sarcastic
 - **Stern** → Serious, no-nonsense
 - **Concerned** → Worried, caring
 
-### ✅ 100% Free & Local
-- Uses TinyLlama (no API costs)
+### 100% Free & Local
+- Uses Qwen 2.5 3B Instruct (no API costs)
 - Runs on your machine
 - No rate limits
 - No safety filters blocking responses
 
 ---
 
-## 💬 Example Conversation
+## Example Conversation
 
 ```
 You: "Hello Nick"
@@ -66,18 +66,19 @@ Notice how Nick **remembers** you're discussing a murder case!
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-AFML_Project_NPC_Final/
+Dynamic_NPC_Dialogue_Generation/
 ├── app.py                          # Flask server
 ├── agents/                         # Agent implementations
 │   ├── __init__.py
 │   ├── base_agent.py              # Base agent interface
 │   ├── agent_manager.py           # Multi-agent coordinator
-│   └── gemini_agent.py            # Gemini implementation
+│   └── huggingface_agent.py       # HuggingFace implementation
 ├── nick_personality.py            # Character profile
 ├── dialogue_processor.py          # CSV dialogue parser
+├── vector_store.py                # ChromaDB vector search
 ├── data/                          # Data files
 │   └── nick_valentine_dialogue.csv
 ├── public/                        # Frontend
@@ -87,7 +88,7 @@ AFML_Project_NPC_Final/
 ├── docs/                          # Documentation
 │   ├── PYTHON_QUICKSTART.md
 │   ├── REFACTORING_ROADMAP.md
-│   └── README.md (old Node.js docs)
+│   └── README.md
 ├── config/                        # Configuration templates
 │   └── .env.example
 ├── .env                           # Your environment variables
@@ -97,29 +98,29 @@ AFML_Project_NPC_Final/
 
 ---
 
-## ✨ Features
+## Features
 
 ### Multi-Agent System
 - **Seamless Agent Switching**: Switch between models via dropdown
 - **Independent Conversations**: Each agent maintains its own history
-- **Extensible Architecture**: Easy to add new agents (HF, local models, etc.)
+- **Extensible Architecture**: Easy to add new agents
 
 ### Current Agents
-- ✅ **HuggingFace Agent** (Primary) - TinyLlama 1.1B Chat (FREE, local)
-- ✅ **Vector DB Integration** - ChromaDB for context retrieval
+- **HuggingFace Agent** (Primary) - Qwen 2.5 3B Instruct (FREE, local)
+- **Vector DB Integration** - ChromaDB for context retrieval
 
 ### Planned Features
-- ✅ ChromaDB Vector Search for context retrieval
-- ✅ RAG (Retrieval Augmented Generation)
-- 🔜 Agentic Pipeline for multi-step workflows
-- 🔜 Model performance metrics
-- 🔜 Fine-tuned character models
+- ChromaDB Vector Search for context retrieval
+- RAG (Retrieval Augmented Generation)
+- Agentic Pipeline for multi-step workflows
+- Model performance metrics
+- Fine-tuned character models
 
 ---
 
-## 🎮 Usage
+## Usage
 
-1. **Agent is Auto-Selected**: HuggingFace/TinyLlama is the primary agent
+1. **Agent is Auto-Selected**: HuggingFace/Qwen is the primary agent
 2. **Set Context**: Investigation, Combat, Casual, etc.
 3. **Choose Emotion**: Neutral, Amused, Stern, etc.
 4. **Chat**: Type and press Enter
@@ -127,7 +128,7 @@ AFML_Project_NPC_Final/
 
 ---
 
-## 🔧 API Endpoints
+## API Endpoints
 
 ### Dialogue
 - `POST /api/generate` - Generate response
@@ -142,7 +143,7 @@ AFML_Project_NPC_Final/
 
 ---
 
-## 🛠️ Adding New Agents
+## Adding New Agents
 
 1. Create new agent class extending `BaseDialogueAgent`
 2. Implement `initialize()` and `generate_response()`
@@ -155,31 +156,30 @@ AFML_Project_NPC_Final/
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 - **[Python Quickstart](docs/PYTHON_QUICKSTART.md)** - Setup guide
 - **[Refactoring Roadmap](docs/REFACTORING_ROADMAP.md)** - Future plans
-- **[Old Node.js Docs](docs/README.md)** - Previous implementation
 
 ---
 
-## 🎯 Roadmap
+## Roadmap
 
 See [REFACTORING_ROADMAP.md](docs/REFACTORING_ROADMAP.md) for detailed plans:
 
-- ✅ Flask backend with multi-agent system
-- ✅ Agent switching UI
-- 🔜 ChromaDB integration
-- 🔜 HuggingFace models
-- 🔜 Agentic pipeline
-- 🔜 Vector search optimization
+- Flask backend with multi-agent system
+- Agent switching UI
+- ChromaDB integration
+- HuggingFace models
+- Agentic pipeline
+- Vector search optimization
 
 ---
 
-## 💡 Tech Stack
+## Tech Stack
 
 - **Backend**: Flask, Python 3.10+
-- **AI**: TinyLlama 1.1B Chat (HuggingFace Transformers)
+- **AI**: Qwen 2.5 3B Instruct (HuggingFace Transformers)
 - **Vector DB**: ChromaDB
 - **Frontend**: Vanilla JavaScript
 - **Data**: Pandas, CSV
@@ -187,10 +187,10 @@ See [REFACTORING_ROADMAP.md](docs/REFACTORING_ROADMAP.md) for detailed plans:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Add new agents, improve prompts, optimize vector search!
 
-## 📄 License
+## License
 
 MIT

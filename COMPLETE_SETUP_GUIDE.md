@@ -1,48 +1,49 @@
-# FIXED System - Complete Setup & Usage Guide
+# Complete Setup & Usage Guide
 
-## ✅ What Was Fixed
+## What Was Fixed
 
-### 1. **Removed Gemini Dependency**
-- ✅ Removed `google-generativeai` from requirements
-- ✅ Removed Gemini agent initialization from `app.py`
-- ✅ Updated frontend HTML to reference TinyLlama instead of Gemini
+### 1. Removed Gemini Dependency
+- Removed `google-generativeai` from requirements
+- Removed Gemini agent initialization from `app.py`
+- Updated frontend HTML to reference Qwen model
 
-### 2. **Improved HuggingFace Agent**
-- ✅ **Better prompts**: Added context-aware and emotion-aware system messages
-- ✅ **Conversation history**: Now includes last 3 exchanges for continuity
-- ✅ **Improved generation params**: Optimized temperature, top_k, top_p for better quality
-- ✅ **Better post-processing**: Removes artifacts, limits to 3 sentences, validates output
-- ✅ **Smarter fallbacks**: Uses context-appropriate fallback responses
+### 2. Improved HuggingFace Agent
+- Better prompts: Added context-aware and emotion-aware system messages
+- Conversation history: Now includes last 3 exchanges for continuity
+- Improved generation params: Optimized temperature, top_k, top_p for better quality
+- Better post-processing: Removes artifacts, limits to 2 sentences, validates output
+- Smarter fallbacks: Uses context-appropriate fallback responses
 
-### 3. **Frontend Updates**
-- ✅ Updated info panel to reference TinyLlama (100% free)
-- ✅ All agent switching UI remains functional
-- ✅ Cost estimate now shows $0.00
+### 3. Frontend Updates
+- Updated info panel to reference Qwen 2.5 3B Instruct
+- All agent switching UI remains functional
+- Cost estimate now shows $0.00
 
 ---
 
-## 🚀 How to Start the System
+## How to Start the System
 
 ### Option 1: Quick Start (Recommended)
 ```bash
 # Make sure you're in the project directory
-cd /Users/kanishkraghavendra/Documents/Project/Dynamic_NPC_Dialogue_Generation
+cd D:\git_projects\Dynamic_NPC_Dialogue_Generation
 
-# Run the setup script
-./start.sh
+# Activate virtual environment
+venv\Scripts\activate  # Windows
+# OR
+source venv/bin/activate  # Linux/Mac
 
-# If that doesn't work, run:
-bash start.sh
+# Install dependencies (if not already installed)
+pip install -r requirements.txt
 
-# Then start the server:
-source venv/bin/activate
+# Start the server
 python app.py
 ```
 
 ### Option 2: Manual Setup
 ```bash
 # 1. Activate virtual environment
-source venv/bin/activate
+venv\Scripts\activate  # Windows
 
 # 2. Install dependencies (if not already installed)
 pip install flask flask-cors python-dotenv pandas transformers torch sentence-transformers chromadb
@@ -51,29 +52,24 @@ pip install flask flask-cors python-dotenv pandas transformers torch sentence-tr
 python app.py
 ```
 
-### Option 3: Using Python 3 directly
-```bash
-python3 app.py
-```
-
 ---
 
-## 🌐 Accessing the Web Interface
+## Accessing the Web Interface
 
 Once the server starts, you'll see:
 ```
-🌐 Server running at http://localhost:3000
+Server running at http://localhost:3000
 ```
 
 **Open your browser and go to:** `http://localhost:3000`
 
 ---
 
-## 💬 How to Have Proper Conversations
+## How to Have Proper Conversations
 
 ### The System Now Includes:
 
-#### 1. **Conversation History** (Automatic)
+#### 1. Conversation History (Automatic)
 - Last 3 exchanges are automatically included in the prompt
 - Provides context for follow-up questions
 - Makes conversations feel more natural
@@ -88,7 +84,7 @@ Nick: "A case, huh? What kind of trouble you got yourself into?"
          ↑ Nick remembers you just greeted him
 ```
 
-#### 2. **Context-Aware Responses**
+#### 2. Context-Aware Responses
 Select the appropriate context dropdown:
 - **Investigation**: Detective work, clues, cases
 - **Combat**: Dangerous situations, threats
@@ -96,7 +92,7 @@ Select the appropriate context dropdown:
 - **Emotional**: Deep feelings, personal topics
 - **Greeting**: First meetings
 
-#### 3. **Emotion Control**
+#### 3. Emotion Control
 Select emotion to influence Nick's tone:
 - **Neutral**: Standard detective tone
 - **Amused**: Dry humor, sarcastic
@@ -105,14 +101,14 @@ Select emotion to influence Nick's tone:
 - **Irritated**: Impatient, annoyed
 - **Somber**: Reflective, serious
 
-#### 4. **Vector Examples** (Include Examples checkbox)
+#### 4. Vector Examples (Include Examples checkbox)
 - When checked: Retrieves similar Nick Valentine quotes from database
 - Makes responses more authentic and in-character
 - Slightly slower but much better quality
 
 ---
 
-## 🎭 Example Conversations
+## Example Conversations
 
 ### Example 1: Investigation Context
 ```
@@ -152,44 +148,44 @@ Nick: "It is what it is. I've got a job to do, and that keeps me going."
 
 ---
 
-## 🔧 Generation Parameters (Already Optimized)
+## Generation Parameters (Already Optimized)
 
 The system now uses these optimal settings:
 
 ```python
-max_new_tokens = 50       # Allows complete thoughts
-temperature = 0.85        # Balanced creativity/focus
-top_p = 0.92             # Nucleus sampling
-top_k = 40               # Top-k filtering
+max_new_tokens = 80       # Allows complete thoughts
+temperature = 0.7         # Balanced creativity/focus
+top_p = 0.9              # Nucleus sampling
+top_k = 50               # Top-k filtering
 repetition_penalty = 1.2  # Prevents loops
 ```
 
 ---
 
-## 🎯 Tips for Best Results
+## Tips for Best Results
 
 ### DO:
-✅ **Use appropriate context** - Set Investigation for detective work, Casual for small talk
-✅ **Keep "Include Examples" checked** - Much better quality with vector retrieval
-✅ **Ask follow-up questions** - System remembers last 3 exchanges
-✅ **Use clear, direct questions** - "What do you think of Piper?" vs "Tell me stuff"
-✅ **Select emotions** - Helps guide the tone of Nick's response
+- Use appropriate context - Set Investigation for detective work, Casual for small talk
+- Keep "Include Examples" checked - Much better quality with vector retrieval
+- Ask follow-up questions - System remembers last 3 exchanges
+- Use clear, direct questions - "What do you think of Piper?" vs "Tell me stuff"
+- Select emotions - Helps guide the tone of Nick's response
 
 ### DON'T:
-❌ **Ask very long complex questions** - Keep queries focused (1-2 sentences)
-❌ **Expect perfect responses** - TinyLlama is small, not GPT-4
-❌ **Switch context mid-conversation** - Causes confusion
-❌ **Uncheck "Include Examples"** - Quality drops significantly
+- Ask very long complex questions - Keep queries focused (1-2 sentences)
+- Expect perfect responses - Qwen 2.5 3B is a smaller model, not GPT-4
+- Switch context mid-conversation - Causes confusion
+- Uncheck "Include Examples" - Quality drops significantly
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Problem: Server won't start
 ```bash
 # Solution 1: Check if Flask is installed
-source venv/bin/activate
-pip list | grep -i flask
+pip list | findstr flask  # Windows
+pip list | grep -i flask  # Linux/Mac
 
 # Solution 2: Reinstall dependencies
 pip install --force-reinstall flask flask-cors
@@ -217,13 +213,13 @@ pip install transformers torch
 ### Problem: Very slow responses
 ```
 # This is normal on CPU
-# TinyLlama takes 5-10 seconds per response on CPU
+# Qwen 2.5 3B takes 5-10 seconds per response on CPU
 # Expect longer on first request (model loading)
 ```
 
 ### Problem: "Model not found" error
 ```bash
-# The model will download on first run (~2.2GB)
+# The model will download on first run (~6GB)
 # Make sure you have:
 # 1. Internet connection
 # 2. Enough disk space
@@ -232,18 +228,18 @@ pip install transformers torch
 
 ---
 
-## 📊 What Each File Does
+## What Each File Does
 
 ### Backend:
 - **`app.py`** - Flask server, routes, API endpoints
-- **`agents/huggingface_agent.py`** - TinyLlama generation (FIXED)
+- **`agents/huggingface_agent.py`** - Qwen model generation
 - **`agents/agent_manager.py`** - Manages agents and conversation history
 - **`agents/base_agent.py`** - Base class for all agents
 - **`dialogue_processor.py`** - CSV parser for Nick's dialogue examples
 - **`vector_store.py`** - ChromaDB vector search (optional)
 
 ### Frontend:
-- **`public/index.html`** - Main page structure (FIXED)
+- **`public/index.html`** - Main page structure
 - **`public/app.js`** - JavaScript for UI and API calls
 - **`public/styles.css`** - Styling
 
@@ -252,7 +248,7 @@ pip install transformers torch
 
 ---
 
-## 🎓 For Your TA Demo
+## For Your Demo
 
 ### What to Show:
 
@@ -277,47 +273,44 @@ pip install transformers torch
    - Show different tone
 
 5. **Highlight features:**
-   - ✅ 100% free (no API costs)
-   - ✅ Conversation memory (last 3 exchanges)
-   - ✅ Context-aware responses
-   - ✅ Vector search for authentic quotes
-   - ✅ Real-time generation
+   - 100% free (no API costs)
+   - Conversation memory (last 3 exchanges)
+   - Context-aware responses
+   - Vector search for authentic quotes
+   - Real-time generation
 
 ### What to Emphasize:
-- **No Gemini safety blocks** - Removed paid API completely
-- **Local generation** - TinyLlama runs on your machine
-- **Conversation continuity** - System remembers context
-- **Quality improvements** - Better prompts and post-processing
+- Local generation - Qwen model runs on your machine
+- Conversation continuity - System remembers context
+- Quality improvements - Better prompts and post-processing
 
 ---
 
-## 🆚 Before vs. After Fixes
+## Before vs. After Fixes
 
-| Aspect | BEFORE (Gemini) | AFTER (TinyLlama) |
-|--------|-----------------|-------------------|
-| **Safety Blocks** | ❌ Frequent | ✅ None |
-| **Conversation Memory** | ❌ None | ✅ Last 3 exchanges |
-| **Context Awareness** | ❌ Basic | ✅ Advanced |
-| **Prompt Quality** | ❌ Oversimplified | ✅ Rich with examples |
-| **Cost** | ⚠️ Free tier (limited) | ✅ $0 forever |
-| **Response Quality** | ⭐⭐⭐⭐ (when not blocked) | ⭐⭐⭐ (consistent) |
-| **Reliability** | ❌ Unpredictable | ✅ Consistent |
+| Aspect | BEFORE | AFTER |
+|--------|--------|-------|
+| **Conversation Memory** | None | Last 3 exchanges |
+| **Context Awareness** | Basic | Advanced |
+| **Prompt Quality** | Oversimplified | Rich with examples |
+| **Cost** | Free tier (limited) | $0 forever |
+| **Response Quality** | Inconsistent | Consistent |
+| **Reliability** | Unpredictable | Consistent |
 
 ---
 
-## 🎉 Summary
+## Summary
 
 **Your system is now:**
-- ✅ Working with TinyLlama (no Gemini)
-- ✅ Has proper conversation memory
-- ✅ Context-aware and emotion-aware
-- ✅ Better prompts and post-processing
-- ✅ 100% free with no API costs
-- ✅ Ready for demo
+- Working with Qwen 2.5 3B Instruct (local model)
+- Has proper conversation memory
+- Context-aware and emotion-aware
+- Better prompts and post-processing
+- 100% free with no API costs
+- Ready for use
 
 **To start using:**
 ```bash
-source venv/bin/activate
 python app.py
 # Open http://localhost:3000
 ```
@@ -328,4 +321,4 @@ python app.py
 - Ask clear, focused questions
 - Let it remember previous exchanges
 
-🚀 **Ready to go!**
+Ready to go!

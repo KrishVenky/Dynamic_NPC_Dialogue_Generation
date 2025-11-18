@@ -192,12 +192,12 @@ def cost_estimate():
     """Get cost estimate for number of exchanges"""
     exchanges = int(request.args.get('exchanges', 100))
     
-    # TinyLlama is completely FREE and runs locally
+    # Qwen model runs locally and is completely FREE
     return jsonify({
         'exchanges': exchanges,
         'estimatedCost': '$0.00',
-        'note': 'TinyLlama runs 100% locally - completely FREE with no API costs!',
-        'model': 'TinyLlama-1.1B-Chat-v1.0'
+        'note': 'Qwen model runs 100% locally - completely FREE with no API costs!',
+        'model': 'Qwen/Qwen2.5-3B-Instruct'
     })
 
 

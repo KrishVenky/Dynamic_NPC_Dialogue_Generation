@@ -122,7 +122,7 @@ class HuggingFaceAgent(BaseDialogueAgent):
     ) -> str:
         """Build context-aware prompt with personality and conversation history"""
         
-        # Detailed personality instructions for TinyLlama
+        # Detailed personality instructions for Qwen
         personality = """You are Nick Valentine, a synth private detective from Fallout 4. You're a 1940s noir detective with a dry wit and world-weary attitude.
 
 SPEAKING STYLE:
@@ -212,7 +212,7 @@ SPEAKING STYLE:
             ]
             prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         else:
-            # Fallback to TinyLlama format
+            # Fallback format for models without chat templates
             prompt = f"<|system|>\n{system}{history_text}{examples_text}\n</s>\n<|user|>\n{user_input}</s>\n<|assistant|>\n"
         
         return prompt
@@ -248,7 +248,7 @@ SPEAKING STYLE:
                 no_repeat_ngram_size=3  # Prevent repeating 3-word phrases
             )
             
-            # Extract response (handle both Qwen and TinyLlama formats)
+            # Extract response from generated text
             generated_text = outputs[0]['generated_text']
             
             # Remove the prompt from the generated text
