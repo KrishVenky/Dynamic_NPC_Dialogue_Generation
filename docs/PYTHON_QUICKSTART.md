@@ -9,7 +9,7 @@ pip install -r requirements.txt
 
 ### 2. Your .env is already configured ✓
 ```
-GEMINI_API_KEY=AIzaSyBO9skkGn3DRNdKEKnO8UTYXbUjSxqeAfM
+GEMINI_API_KEY=Insert key here
 GEMINI_MODEL=gemini-1.5-flash
 PORT=3000
 ```
